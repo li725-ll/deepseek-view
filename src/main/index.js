@@ -1,19 +1,11 @@
 const { app, BrowserWindow } = require("electron");
+const windows = require("./windows");
+require("./handler");
 
-function createWindow() {
-  const win = new BrowserWindow({
-    width: 800,
-    height: 600,
-    webPreferences: {
-      nodeIntegration: true,
-    },
-  });
-  app.isPackaged ?
-    win.loadFile("dist/index.html") : 
-    win.loadURL("http://localhost:5173/");
-}
-
+process.on("uncaughtException", (err) => {
+  console.log(err);
+});
 
 app.whenReady().then(() => {
-  createWindow();
+  windows.mainWindow.createWindow();
 });

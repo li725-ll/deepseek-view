@@ -1,7 +1,8 @@
 import { Router } from "react-router";
+import HomeView from "./view/home";
 
 export default function App() {
   return (
-    <h1>Hello, world</h1>
+    <HomeView />
   );
 }
