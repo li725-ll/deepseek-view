@@ -12,6 +12,7 @@ function createWindow() {
       preload: path.resolve(__dirname, "../../preload/index.js"),
     },
   });
+  win.setMenu(null);
   windows.addWindow("main-window", win);
   app.isPackaged ?
     win.loadFile(path.resolve(__dirname, "../../renderer/dist/index.html")) : 

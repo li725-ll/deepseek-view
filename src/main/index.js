@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require("electron");
+const { app } = require("electron");
 const windows = require("./windows");
 require("./handler");
 
