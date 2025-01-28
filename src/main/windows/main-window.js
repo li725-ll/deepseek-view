@@ -14,7 +14,7 @@ function createWindow() {
   });
   windows.addWindow("main-window", win);
   app.isPackaged ?
-    win.loadFile("dist/index.html") : 
+    win.loadFile(path.resolve(__dirname, "../../renderer/dist/index.html")) : 
     win.loadURL("http://localhost:5173/");
 }
 
