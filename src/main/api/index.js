@@ -1,36 +1,49 @@
 const OpenAI = require("openai");
 const { log, windows } = require("../utils");
 
-let openai = null;
+const config = {
+  openai: null,
+  model: "deepseek-chat"
+}
 
 function initApi(key) {
-  openai = new OpenAI({
+  config.openai = new OpenAI({
     baseURL: "https://api.deepseek.com",
     apiKey: key
   });
-  log.info("init openai success.", key);
+  log.info("init openai success.");
 } 
 
-async function chat(content) {
-  if (!openai) {
+function setModel (model) {
+  config.model = model;
+}
+
+async function chat(messages) {
+  if (!config.openai) {
     throw new Error("请先初始化openai");
   }
-  log.info("send chat message.", content);
-  const stream = await openai.chat.completions.create({
-    messages: [{ role: "user", content }],
-    model: "deepseek-chat",
-    stream: true
-  });
+  log.info("send chat message.", messages);
+  try {
+    const stream = await config.openai.chat.completions.create({
+      messages,
+      model: config.model,
+      stream: true
+    });
 
-  const mainWindow = windows.getWindow("main-window");
-  for await (const chunk of stream) {
-    await mainWindow.webContents.send("chat-message", chunk);
+    const mainWindow = windows.getWindow("main-window");
+    for await (const chunk of stream) {
+      await mainWindow.webContents.send("chat-message", chunk);
+    }
+  } catch (e) {
+    console.log(e);
+    return {status: false, message: e.error.message, info: null}
   }
 
   return { status: true, message: null, info: null };
 }
 
 module.exports = {
+  chat,
   initApi,
-  chat
+  setModel
 };

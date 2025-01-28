@@ -1,44 +1,47 @@
 import React, {useState, useCallback, useEffect} from "react";
-import { Chat, Modal, Input, Toast } from "@douyinfe/semi-ui";
-import { IconSetting } from "@douyinfe/semi-icons";
+import { Chat, Modal, Input, Toast, Select } from "@douyinfe/semi-ui";
+import { IconSetting, IconRefresh } from "@douyinfe/semi-icons";
+import deepseek from "../../assets/images/deepseek.png";
+import user from "../../assets/images/user.png";
 import "./index.less";
-
-const defaultMessage = [];
 
 const roleInfo = {
   user:  {
-    name: 'User',
-    avatar: 'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/docs-icon.png'
-  },
-  assistant: {
-    name: 'Assistant',
-    avatar: 'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/other/logo.png'
+    name: "User",
+    avatar: user
   },
   system: {
-    name: 'System',
-    avatar: 'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/other/logo.png'
+    name: "Deepseek",
+    avatar: deepseek
   }
 };
+
+const models = [
+  "deepseek-chat",
+  "deepseek-reasoner"
+];
 
 let id = 0;
 function getId() {
   return `id-${id++}`
 };
 
-const uploadProps = { action: 'https://api.semi.design/upload' };
-const uploadTipProps = { content: '自定义上传按钮提示信息' };
+// const uploadProps = { action: 'https://api.semi.design/upload' };
+// const uploadTipProps = { content: '自定义上传按钮提示信息' };
 
 export default function HomeView() {
-  const [message, setMessage] = useState(defaultMessage);
+  const [message, setMessage] = useState([]);
   const [visible, setVisible] = useState(false);
   const [stopGenerate, setStopGenerate] = useState(false);
+  const [model, setModel] = useState("deepseek-chat");
   const [key, setKey] = useState("");
 
   useEffect(() => {
     window.API.getDeepseekKey()
       .then((res) => {
         if (res.status) {
-          setKey(res.info);
+          setKey(res.info.key);
+          setModel(res.info.model);
         }
       })
       .catch((e) => {
@@ -54,7 +57,7 @@ export default function HomeView() {
         const temp = message.pop();
         const newMessage = {
           content: temp.content + data.choices[0]?.delta?.content || '',
-          role: "assistant",
+          role: "system",
           id: data.id,
           createAt: data.created
         }
@@ -63,9 +66,16 @@ export default function HomeView() {
     });
   }, []);
 
+  // select
+  const selectModel = (value) => {
+    setModel(value);
+    window.API.selectModel(value);
+  };  
+
+  // chat
   const onMessageSend = useCallback((content, attachment) => {
     const newAssistantMessage = {
-      role: "assistant",
+      role: "system",
       id: getId(),
       content: "",
       createAt: Date.now(),
@@ -73,9 +83,15 @@ export default function HomeView() {
     }
     setStopGenerate(true);
     setMessage((message) => ([ ...message, newAssistantMessage])); 
-
-    window.API.sendChatMessage(content)
-      .then(() => {
+    window.API.sendChatMessage([...message.map(item => ({role: item.role, content: item.content})), { role: "user", content }])
+      .then((res) => {
+        if (!res.status) {
+          Toast.error({
+            content: res.message,
+            duration: 3,
+            stack: true,
+          });
+        }
         setStopGenerate(false);
       })
       .catch(() => {
@@ -86,7 +102,7 @@ export default function HomeView() {
           stack: true,
         });
       });
-  }, []);
+  }, [message]);
 
   const onChatsChange = useCallback((chats) => {
       setMessage(chats);
@@ -106,10 +122,17 @@ export default function HomeView() {
     }, 200);
   });
 
+  const onStopGenerator = () => {
+    setMessage((message) => {
+      return [...message.slice(0, -1)]
+  })
+  };
+
   // dialoag
   const showDialog = () => {
     setVisible(true);
   };
+
   const handleOk = () => {
     window.API.setDeepseekKey(key)
       .then((res) => {
@@ -136,6 +159,7 @@ export default function HomeView() {
       });
     setVisible(false);
   };
+
   const handleCancel = () => {
     setVisible(false);
   };
@@ -143,26 +167,34 @@ export default function HomeView() {
   return (
       <div className="container">
         <div className="container-header">
-          <div>
-            test
+          <div style={{color: "#fff", fontSize: "16px", fontWeight: 600}}>
+            <span>Deepseek</span>
+          </div>
+          <div className="container-header-model">
+            <span>模型: </span>
+            <Select defaultValue={"deepseek-chat"} size="small" onSelect={selectModel} style={{width: "180px"}} value={model}>
+              {models.map((item)=> <Select.Option value={item}>{item}</Select.Option>)}
+            </Select>
+            <IconRefresh onClick={() => {setMessage([])}} className="icon"/>
           </div>
           <div className="container-header-settings" onClick={showDialog}>
-            <IconSetting size="large"/>
+            <IconSetting size="large" />
           </div>
         </div>
         <div className="container-body">
           <Chat 
             align="leftRight"
             mode="userBubble"
-            uploadProps={uploadProps}
+            // uploadProps={uploadProps}
             className="chat-container"
             chats={message}
             roleConfig={roleInfo}
             showStopGenerate={stopGenerate}
+            showClearContext={true}
             onChatsChange={onChatsChange}
             onMessageSend={onMessageSend}
             onMessageReset={onMessageReset}
-            uploadTipProps={uploadTipProps}
+            onStopGenerator={onStopGenerator}
           />
         </div>
         <Modal

@@ -7,10 +7,7 @@ const storePath = app.isPackaged ?
   path.resolve(__dirname, "../../store")
 
 function setSettings(key, value) {
-  const settings = {
-    key: ""
-  };
-
+  const settings = getSettings();
   if (!Object.keys(settings).includes(key)) {
     throw new Error(`Invalid key: ${key}`);
   } else {
@@ -23,7 +20,7 @@ function setSettings(key, value) {
 function getSettings(key) {
   fsExtra.ensureDirSync(storePath);
   const settings = fsExtra.readJSONSync(path.resolve(storePath, "settings.json"));
-  return settings[key];
+  return key ? settings[key]: settings;
 }
 
 module.exports = {

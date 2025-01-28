@@ -13,6 +13,9 @@ contextBridge.exposeInMainWorld("API", {
   getChatMessage: (callback) => {
     ipcRenderer.on("chat-message", callback);
   },
+  selectModel: (model) => {
+    return ipcRenderer.invoke("select-model", model);
+  },
   getVersion: () => {
     return process.versions.electron;
   },
